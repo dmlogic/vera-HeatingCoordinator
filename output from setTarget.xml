@@ -1,6 +1,0 @@
-
-<?xml version="1.0"?>
-<u:SetTargetResponse xmlns:u="urn:schemas-upnp-org:service:SwitchPower:1">
-<JobID>446</JobID>
-</u:SetTargetResponse>
-<!-- http://192.168.1.104:3480/data_request?id=action&DeviceNum=42&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue= -->
