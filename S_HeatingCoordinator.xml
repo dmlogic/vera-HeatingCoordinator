@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<scpd xmlns="urn:schemas-upnp-org:service-1-0">
+    <specVersion>
+        <major>1</major>
+        <minor>0</minor>
+    </specVersion>
+    <actionList>
+        <action>
+            <name>Process</name>
+            <argumentList>
+                <argument>
+                    <name>deviceIds</name>
+                    <direction>in</direction>
+                    <relatedStateVariable>string</relatedStateVariable>
+                </argument>
+            </argumentList>
+        </action>
+    </actionList>
+</scpd>

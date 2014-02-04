@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<implementation>
+    <files>L_HeatingCoordinator.lua</files>
+    <startup>hcStartup</startup>
+    <actionList>
+        <action>
+            <serviceId>urn:dmlogic-com:serviceId:HeatingCoordinator1</serviceId>
+            <name>Process</name>
+            <run>hc_Process(deviceIds)</run>
+        </action>
+    </actionList>
+</implementation>
