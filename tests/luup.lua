@@ -3,9 +3,14 @@
 ]]
 luup = {}
 local luupvars = {}
+local luupwatching = {}
 
 function luup.task(a,b,c,d)
     taskMessage = a
+end
+
+function luup.log(msg,lvl)
+    print("LOG: "..lvl.." "..msg)
 end
 
 function luup.variable_get(serviceId,varName,deviceId)
@@ -19,6 +24,11 @@ function luup.variable_set(serviceId,varName,value,deviceId)
     luupvars[key] = value
 
     -- print("variable set: "..key..":"..value)
+end
+
+function luup.variable_watch(func,service,var,deviceId)
+    key = deviceId..service..var
+    luupwatching[key] = func
 end
 
 function luup.call_action(serviceId,actionName,args,deviceId)

@@ -6,7 +6,7 @@
     </specVersion>
     <device>
      <deviceType>urn:dmlogic-com:device:HeatingCoordinator:1</deviceType>
-     <friendlyName>Generic Web Service</friendlyName>
+     <friendlyName>Heating Coordinator</friendlyName>
      <manufacturer>dmlogic.com</manufacturer>
      <manufacturerURL>http://dmlogic.com</manufacturerURL>
      <modelDescription>HeatingCoordinator</modelDescription>

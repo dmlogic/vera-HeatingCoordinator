@@ -3,13 +3,13 @@ local coordinatorServiceId = 'urn:dmlogic-com:serviceId:HeatingCoordinator1'
 local setPointServiceId    = 'urn:upnp-org:serviceId:TemperatureSetpoint1_Heat'
 local currentTempServiceId = 'urn:upnp-org:serviceId:TemperatureSensor1'
 local relayServiceId       = 'urn:upnp-org:serviceId:HVAC_UserOperatingMode1'
-local tooSoon = 120 -- every 2 mins is just fines
+local tooSoon = 120 -- every 2 mins is just fine
 
 --[[
   Splits up the supplied string into a table
   of device IDs
-]]--
-function hc_extractIds(inputstr, sep)
+--]]
+function hcextractIds(inputstr, sep)
 
     totalDevices = 0
 
@@ -28,7 +28,7 @@ function hc_extractIds(inputstr, sep)
     return t
 end
 
-function hc_deviceNeedsHeat(deviceId)
+function hcdeviceNeedsHeat(deviceId)
 
     local setPoint = luup.variable_get(setPointServiceId,'SetpointTarget', deviceId)
     local current  = luup.variable_get(currentTempServiceId,'CurrentTemperature', deviceId)
@@ -44,10 +44,10 @@ function hc_deviceNeedsHeat(deviceId)
     return false
 end
 
-function hc_setRelay(setValue,relayId)
+function hcsetRelay(setValue,relayId)
 
     -- note when last set
-    hc_logLastSet(relayId)
+    hclogLastSet(relayId)
 
     args = {}
     args.NewModeTarget = setValue
@@ -59,12 +59,12 @@ function hc_setRelay(setValue,relayId)
 
 end
 
-function hc_tooSoon(relayId)
+function hctooSoon(relayId)
 
     last = luup.variable_get(coordinatorServiceId,'lastRelaySetTime',relayId)
 
     if(last == nil) then
-        hc_logLastSet(relayId)
+        hclogLastSet(relayId)
         return false
     end
 
@@ -78,7 +78,7 @@ function hc_tooSoon(relayId)
     end
 end
 
-function hc_logLastSet(relayId,t)
+function hclogLastSet(relayId,t)
     setTime = time or os.time()
     luup.variable_set(coordinatorServiceId,'lastRelaySetTime',setTime,relayId)
 end
@@ -86,34 +86,45 @@ end
 --[[
   Do your thang
 ]]--
-function hc_Process(deviceIds,relayId)
-
-    if(hc_tooSoon(relayId) == true) then
+function hcProcess(lul_device, lul_settings)
+    luup.log("hcProcess",25)
+    if(hctooSoon(relayId) == true) then
         return 'too soon'
     end
 
     -- figure out which devices we are looking at
-    deviceTable = hc_extractIds(deviceIds,',')
+    deviceTable = hcextractIds(deviceIds,',')
 
     if(totalDevices == 0) then
         return
     end
 
     for k,v in pairs(deviceTable) do
-        if(hc_deviceNeedsHeat(v) == true) then
-            hc_setRelay('HeatOn',relayId)
+        if(hcdeviceNeedsHeat(v) == true) then
+            hcsetRelay('HeatOn',relayId)
             return k
         end
     end
 
-    hc_setRelay('Off',relayId)
+    hcsetRelay('Off',relayId)
 
     return totalDevices
 
 end
 
-function hc_Startup(lul_device)
+function hcMonitor(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
+
+    luup.log("DMHeating lul_device:"..lul_device..", lul_variable:"..lul_variable..", lul_value_old:"..lul_value_old..", lul_value_new:"..lul_value_new.." at ".. os.date("%H:%M:%S"),25)
+end
+
+function hcStartup(lul_device)
+
     luup.task("Running Lua Startup", 1, "HeatingCoordinator", -1)
 
-    coordinatorId = lul_device
+    --coordinatorId = lul_device
+
+    luup.variable_watch("hcMonitor","urn:upnp-org:serviceId:TemperatureSetpoint1_Heat","CurrentSetpoint", 28); -- this works
+    luup.variable_watch("hcMonitor","urn:upnp-org:serviceId:TemperatureSensor1","CurrentTemperature", 28); -- YES!
+
+    luup.log("hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
 end

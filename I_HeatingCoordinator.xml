@@ -6,7 +6,9 @@
         <action>
             <serviceId>urn:dmlogic-com:serviceId:HeatingCoordinator1</serviceId>
             <name>Process</name>
-            <run>hc_Process(deviceIds)</run>
+            <run>
+                hcProcess(lul_device, lul_settings)
+            </run>
         </action>
     </actionList>
 </implementation>
