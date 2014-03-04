@@ -15,13 +15,18 @@ end
 
 function luup.variable_get(serviceId,varName,deviceId)
     key = serviceId..varName..deviceId
-    -- print("variable get: "..key)
+    value = luupvars[key]
+    if(value == nil) then value = "nil" end
+    -- print("variable get: "..key.. " is : "..value)
     return luupvars[key]
 end
 
 function luup.variable_set(serviceId,varName,value,deviceId)
+
     key = serviceId..varName..deviceId
     luupvars[key] = value
+
+    if(value == nil) then value = "nil" end
 
     -- print("variable set: "..key..":"..value)
 end

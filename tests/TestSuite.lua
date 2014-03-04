@@ -9,41 +9,24 @@ local testSetPointServiceId    = 'urn:upnp-org:serviceId:TemperatureSetpoint1_He
 local testCurrentTempServiceId = 'urn:upnp-org:serviceId:TemperatureSensor1'
 local testRelayServiceId       = 'urn:upnp-org:serviceId:HVAC_UserOperatingMode1'
 
+local myMap = {}
+myMap[1] = {2}
+myMap[22] = {3,4,5}
+
 TestCode = {} --class
 
     function TestCode:testStartUp()
-        hc_Startup('abc')
+        hcStartup(myMap)
+        assertEquals(hcGetDeviceMap(),myMap);
     end
 
-    --[[
-        Make sure we'll get our stat IDs properlys
-    ]]
-    function TestCode:testExtractIds()
+    function TestCode:testSetValveSetPoint()
 
-        ids = '123,456,abc,789'
-        result = hc_extractIds(ids,',')
+        hcSetValveSetPoint({10,20,30},25);
 
-        assertEquals(type(result),'table')
-        assertEquals(result[1],123)
-        assertEquals(result[3],nil)
-    end
-
-    --[[
-        Test the call for heat lookup
-    ]]
-    function TestCode:testDeviceNeedsHeat()
-
-        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',5,1)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',10,1)
-
-        res = hc_deviceNeedsHeat(1)
-        assertEquals(res,true)
-
-        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',25,2)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',20,2)
-
-        res = hc_deviceNeedsHeat(2)
-        assertEquals(res,false)
+        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"CurrentSetpoint",10),25)
+        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"CurrentSetpoint",20),25)
+        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"CurrentSetpoint",30),25)
     end
 
     function TestCode:testSetRelay()
@@ -51,7 +34,7 @@ TestCode = {} --class
         before = os.time()
 
         -- check the action follows through with correct arguments
-        res = hc_setRelay('Off',100)
+        res = hcSetRelay('Off',100)
         assertEquals(type(res),'table');
         assertEquals(res[2],'SetModeTarget');
         args = res[3]
@@ -63,51 +46,67 @@ TestCode = {} --class
         assertEquals((before <= last),true)
     end
 
-    --[[
-        Now pull everything together
-    ]]
-    function TestCode:testTurnOn()
+    function TestCode:testTooSoonTimer()
+
+        hcLogLastSet(100,os.time()-100)
+        assertEquals(true,hcTooSoon(100))
+
+        hcLogLastSet(100,os.time() - 200)
+        assertEquals(false,hcTooSoon(100))
+
+    end
+
+    function TestCode:testDeviceNeedsHeat()
+
+        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',5,1)
+        luup.variable_set(testSetPointServiceId,'SetpointTarget',10,1)
+
+        res = hcDeviceNeedsHeat(1)
+        assertEquals(res,true)
+
+        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',25,2)
+        luup.variable_set(testSetPointServiceId,'SetpointTarget',20,2)
+
+        res = hcDeviceNeedsHeat(2)
+        assertEquals(res,false)
+    end
+
+    function TestCode:testProcessOn()
+
+        hcStartup(myMap)
 
         -- reset the time
-        hc_logLastSet(100,os.time() - 200)
+        hcLogLastSet(100,os.time() - 200)
 
-        -- three stats, two need heat
-        stats = '1,2,3'
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',22,1)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',18,1)
-        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',18,2)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',20,2)
-        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',5,3)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',10,3)
+        luup.variable_set(testSetPointServiceId,'SetpointTarget',25,1)
 
-        count = hc_Process(stats,100)
+        res = hcProcess(100)
 
         -- should have bailed on second loop
-        assertEquals(count,2)
-
-        res = luup.variable_get(testRelayServiceId,'NewModeTarget', 100)
-
-        assertEquals(res,'HeatOn')
+        assertEquals(res,'heatOn')
     end
 
-    function TestCode:testTurnOff( )
+    function TestCode:testProcessOff( )
 
-        -- two stats, both hot
-        stats = '1,2'
+        -- reset the time
+        hcLogLastSet(100,os.time() - 300)
+
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',22,1)
         luup.variable_set(testSetPointServiceId,'SetpointTarget',18,1)
-        luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',25,2)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',5,2)
 
-        count = hc_Process(stats,100)
+        res = hcProcess(100)
 
-        -- should have looped everything
-        assertEquals(count,2)
-
-        res = luup.variable_get(testRelayServiceId,'NewModeTarget', 100)
-
-        assertEquals(res,'Off')
+        -- should have bailed on second loop
+        assertEquals(res,'heatOff')
     end
+
+    function TestCode:testProcessTooSoon( ... )
+        res = hcProcess(100)
+        assertEquals(res,'tooSoon')
+    end
+
+
 -- class TestCode
 
 LuaUnit:run()
