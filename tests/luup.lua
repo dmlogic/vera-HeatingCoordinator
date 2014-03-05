@@ -46,3 +46,7 @@ function luup.call_action(serviceId,actionName,args,deviceId)
     -- this allows us to test at least that the call was made as expected
     return {serviceId,actionName,args,deviceId}
 end
+
+function luup.call_timer()
+    return true;
+end

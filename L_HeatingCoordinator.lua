@@ -6,6 +6,7 @@ local hcRelayServiceId       = 'urn:upnp-org:serviceId:HVAC_UserOperatingMode1'
 local hcTooSoonSeconds = 120 -- every 2 mins is just fine
 local hcDeviceMap = {}
 local hcRelayId = 42
+local hcTimerDelay = "2m"
 
 function hcDeviceNeedsHeat(deviceId)
 
@@ -120,14 +121,10 @@ end
 --[[
     Statup routine
 ]]
-function hcInitDeviceMap( )
+function hcSyncStatsAndValves( )
 
     -- Loop the map
     for statId,valveIds in pairs(hcDeviceMap) do
-
-        -- Watches each stat for changing setpoint or room temperature
-        luup.variable_watch("hcMonitor",hcSetPointServiceId,"CurrentSetpoint", statId); -- this works
-        luup.variable_watch("hcMonitor",hcCurrentTempServiceId,"CurrentTemperature", statId); -- YES!
 
         -- -- Assign each setpoint to the corresponding valve
         hcSetValveSetPoint(valveIds, luup.variable_get(hcSetPointServiceId,"CurrentSetpoint",statId));
@@ -140,6 +137,30 @@ end
 ]]
 function hcGetDeviceMap( )
     return hcDeviceMap;
+end
+
+--[[
+    Timer handler
+]]
+function hcTimer()
+
+    hcSyncStatsAndValves()
+
+    hcProcess(hcRelayId);
+
+    luup.call_timer("hcTimer", 1, hcTimerDelay, "", "")
+end
+
+function hcSetupEventListening()
+
+    for statId,valveIds in pairs(hcDeviceMap) do
+
+        -- Watches each stat for changing setpoint or room temperature
+        luup.variable_watch("hcMonitor",hcSetPointServiceId,"CurrentSetpoint", statId); -- this works
+        luup.variable_watch("hcMonitor",hcCurrentTempServiceId,"CurrentTemperature", statId); -- YES!
+
+    end
+
 end
 
 --[[
@@ -182,7 +203,12 @@ function hcStartup(lul_device, relayId)
         hcRelayId = relayId
     end
 
-    hcInitDeviceMap()
+    -- Listen to the stats
+    hcSetupEventListening()
+
+    -- Run the timer for the first time
+    hcTimer()
 
     luup.log("hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
+
 end
