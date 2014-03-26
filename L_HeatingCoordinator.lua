@@ -5,13 +5,15 @@ local hcCurrentTempServiceId = 'urn:upnp-org:serviceId:TemperatureSensor1'
 local hcRelayServiceId       = 'urn:upnp-org:serviceId:HVAC_UserOperatingMode1'
 local hcTooSoonSeconds = 120 -- every 2 mins is just fine
 local hcDeviceMap = {}
-local hcRelayId = 42
+local hcRelayId = 33
 local hcTimerDelay = "2m"
 
 function hcDeviceNeedsHeat(deviceId)
 
-    local setPoint = luup.variable_get(hcSetPointServiceId,'SetpointTarget', deviceId)
-    local current  = luup.variable_get(hcCurrentTempServiceId,'CurrentTemperature', deviceId)
+    local setPoint = tonumber(luup.variable_get(hcSetPointServiceId,'CurrentSetpoint', deviceId))
+    local current  = tonumber(luup.variable_get(hcCurrentTempServiceId,'CurrentTemperature', deviceId))
+
+    -- luup.log("hcDeviceNeedsHeat "..deviceId,25)
 
     if (setPoint == nil or  current == nil) then
         return false
@@ -32,16 +34,21 @@ function hcSetRelay(setValue,relayId)
     args = {}
     args.NewModeTarget = setValue
 
+    luup.log("hcSetRelay "..relayId.." to "..setValue.." at "..os.date("%H:%M:%S"),25)
+
     -- set the relay
-    -- http://192.168.1.104:3480/data_request?id=action&DeviceNum=42&serviceId=urn:upnp-org:serviceId:HVAC_UserOperatingMode1&action=SetModeTarget&NewModeTarget=Off
-    -- http://192.168.1.104:3480/data_request?id=variableget&DeviceNum=42&Variable=ModeStatus&serviceId=urn:upnp-org:serviceId:HVAC_UserOperatingMode1
+    -- http://192.168.1.104:3480/data_request?id=action&DeviceNum=33&serviceId=urn:upnp-org:serviceId:HVAC_UserOperatingMode1&action=SetModeTarget&NewModeTarget=Off
+    -- http://192.168.1.104:3480/data_request?id=variableget&DeviceNum=33&Variable=ModeStatus&serviceId=urn:upnp-org:serviceId:HVAC_UserOperatingMode1
     return luup.call_action(hcRelayServiceId,'SetModeTarget',args,relayId)
 
 end
 
 function hcTooSoon(relayId)
 
-    last = luup.variable_get(hcCoordinatorServiceId,'lastRelaySetTime',relayId)
+    -- luup.log("CRAZY FOOL. TURN TOO SOON BACK ON ",25)
+    -- return false
+
+    last = tonumber(luup.variable_get(hcCoordinatorServiceId,'lastRelaySetTime',relayId))
 
     if(last == nil) then
         hcLogLastSet(relayId)
@@ -68,12 +75,13 @@ end
 ]]--
 function hcProcess(relayId)
 
-    luup.log("hcProcess",25)
 
     if(hcTooSoon(relayId) == true) then
+        luup.log("hcProcess too soon",25)
         return 'tooSoon'
     end
 
+    luup.log("hcProcess",25)
     hcLogLastSet(relayId)
 
     -- loop our devices and see if anyone needs heat
@@ -114,6 +122,7 @@ end
 function hcSetValveSetPoint(valveIds,setPoint)
 
     for k,valveId in pairs(valveIds) do
+        -- luup.log("DMHeating hcSetValveSetPoint:"..valveId..", "..setPoint,25)
         luup.variable_set(hcSetPointServiceId,"CurrentSetpoint",setPoint,valveId)
     end
 end
@@ -179,23 +188,25 @@ function hcStartup(lul_device, relayId)
     -- This is the default Map of stat IDs to rad valves
     else
         -- Hallway
-        hcDeviceMap[39]  = {900}
+        hcDeviceMap[39]  = {46,42,44,48,50,52,54,56,60}
         -- Kitchen
-        hcDeviceMap[800] = {901}
+        -- hcDeviceMap[x] = {y}
+        -- WC
+        -- hcDeviceMap[x] = {y}
         -- Dining room
-        hcDeviceMap[801] = {902}
+        -- hcDeviceMap[x] = {y}
         -- Lounge
-        hcDeviceMap[36]  = {903,904}
+        -- hcDeviceMap[x] = {y}
         -- Office
-        hcDeviceMap[28]  = {905}
+        hcDeviceMap[65] = {62,58}
         -- Master bedroom
-        hcDeviceMap[802] = {905}
+        -- hcDeviceMap[x] = {y}
         -- Flo room
-        hcDeviceMap[803] = {906}
+        -- hcDeviceMap[x] = {y}
         -- Spare room
-        hcDeviceMap[804] = {907}
+        -- hcDeviceMap[x] = {58}
         -- Bathroom
-        hcDeviceMap[805] = {908}
+        -- hcDeviceMap[x] = {y}
     end
 
     -- Test relay or default
@@ -209,6 +220,6 @@ function hcStartup(lul_device, relayId)
     -- Run the timer for the first time
     hcTimer()
 
-    luup.log("hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
+    luup.log("DMHeating hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
 
 end

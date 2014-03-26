@@ -10,6 +10,7 @@ function luup.task(a,b,c,d)
 end
 
 function luup.log(msg,lvl)
+    if(lvl == nil) then value = "nil" end
     print("LOG: "..lvl.." "..msg)
 end
 
@@ -18,7 +19,7 @@ function luup.variable_get(serviceId,varName,deviceId)
     value = luupvars[key]
     if(value == nil) then value = "nil" end
     -- print("variable get: "..key.. " is : "..value)
-    return luupvars[key]
+    return value
 end
 
 function luup.variable_set(serviceId,varName,value,deviceId)

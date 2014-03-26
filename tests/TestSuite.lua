@@ -59,13 +59,13 @@ TestCode = {} --class
     function TestCode:testDeviceNeedsHeat()
 
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',5,1)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',10,1)
+        luup.variable_set(testSetPointServiceId,'CurrentSetpoint',10,1)
 
         res = hcDeviceNeedsHeat(1)
         assertEquals(res,true)
 
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',25,2)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',20,2)
+        luup.variable_set(testSetPointServiceId,'CurrentSetpoint',20,2)
 
         res = hcDeviceNeedsHeat(2)
         assertEquals(res,false)
@@ -79,7 +79,7 @@ TestCode = {} --class
         hcLogLastSet(100,os.time() - 200)
 
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',22,1)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',25,1)
+        luup.variable_set(testSetPointServiceId,'CurrentSetpoint',25,1)
 
         res = hcProcess(100)
 
@@ -93,7 +93,7 @@ TestCode = {} --class
         hcLogLastSet(100,os.time() - 300)
 
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',22,1)
-        luup.variable_set(testSetPointServiceId,'SetpointTarget',18,1)
+        luup.variable_set(testSetPointServiceId,'CurrentSetpoint',18,1)
 
         res = hcProcess(100)
 
