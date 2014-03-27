@@ -24,9 +24,9 @@ TestCode = {} --class
 
         hcSetValveSetPoint({10,20,30},25);
 
-        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"CurrentSetpoint",10),25)
-        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"CurrentSetpoint",20),25)
-        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"CurrentSetpoint",30),25)
+        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"NewCurrentSetpoint",10),25)
+        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"NewCurrentSetpoint",20),25)
+        assertEquals(luup.variable_get('urn:upnp-org:serviceId:TemperatureSetpoint1_Heat',"NewCurrentSetpoint",30),25)
     end
 
     function TestCode:testSetRelay()
@@ -76,12 +76,12 @@ TestCode = {} --class
         hcStartup(myMap)
 
         -- reset the time
-        hcLogLastSet(100,os.time() - 200)
+        hcLogLastSet(66,os.time() - 300)
 
         luup.variable_set(testCurrentTempServiceId,'CurrentTemperature',22,1)
         luup.variable_set(testSetPointServiceId,'CurrentSetpoint',25,1)
 
-        res = hcProcess(100)
+        res = hcProcess(66)
 
         -- should have bailed on second loop
         assertEquals(res,'heatOn')

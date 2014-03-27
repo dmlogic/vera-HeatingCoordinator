@@ -11,13 +11,13 @@ end
 
 function luup.log(msg,lvl)
     if(lvl == nil) then value = "nil" end
-    print("LOG: "..lvl.." "..msg)
+    print("LOG "..lvl..": "..msg)
 end
 
 function luup.variable_get(serviceId,varName,deviceId)
     key = serviceId..varName..deviceId
     value = luupvars[key]
-    if(value == nil) then value = "nil" end
+    if(value == nil) then value = 0 end
     -- print("variable get: "..key.. " is : "..value)
     return value
 end

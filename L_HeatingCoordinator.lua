@@ -6,14 +6,13 @@ local hcRelayServiceId       = 'urn:upnp-org:serviceId:HVAC_UserOperatingMode1'
 local hcTooSoonSeconds = 120 -- every 2 mins is just fine
 local hcDeviceMap = {}
 local hcRelayId = 33
+local hcControllerId = 66
 local hcTimerDelay = "2m"
 
 function hcDeviceNeedsHeat(deviceId)
 
-    local setPoint = tonumber(luup.variable_get(hcSetPointServiceId,'CurrentSetpoint', deviceId))
-    local current  = tonumber(luup.variable_get(hcCurrentTempServiceId,'CurrentTemperature', deviceId))
-
-    -- luup.log("hcDeviceNeedsHeat "..deviceId,25)
+    setPoint = luup.variable_get(hcSetPointServiceId,'CurrentSetpoint', deviceId)
+    current  = luup.variable_get(hcCurrentTempServiceId,'CurrentTemperature', deviceId)
 
     if (setPoint == nil or  current == nil) then
         return false
@@ -43,15 +42,15 @@ function hcSetRelay(setValue,relayId)
 
 end
 
-function hcTooSoon(relayId)
+function hcTooSoon(controllerId)
 
     -- luup.log("CRAZY FOOL. TURN TOO SOON BACK ON ",25)
     -- return false
 
-    last = tonumber(luup.variable_get(hcCoordinatorServiceId,'lastRelaySetTime',relayId))
+    last = luup.variable_get(hcCoordinatorServiceId,'lastRelaySetTime',controllerId)
 
     if(last == nil) then
-        hcLogLastSet(relayId)
+        hcLogLastSet(controllerId)
         return false
     end
 
@@ -65,9 +64,9 @@ function hcTooSoon(relayId)
     end
 end
 
-function hcLogLastSet(relayId,t)
+function hcLogLastSet(controllerId,t)
     setTime = t or os.time()
-    luup.variable_set(hcCoordinatorServiceId,'lastRelaySetTime',setTime,relayId)
+    luup.variable_set(hcCoordinatorServiceId,'lastRelaySetTime',setTime,controllerId)
 end
 
 --[[
@@ -75,14 +74,11 @@ end
 ]]--
 function hcProcess(relayId)
 
-
-    if(hcTooSoon(relayId) == true) then
-        luup.log("hcProcess too soon",25)
+    if(hcTooSoon(hcControllerId) == true) then
         return 'tooSoon'
     end
 
-    luup.log("hcProcess",25)
-    hcLogLastSet(relayId)
+    hcLogLastSet(hcControllerId)
 
     -- loop our devices and see if anyone needs heat
     for k,v in pairs(hcDeviceMap) do
@@ -105,6 +101,8 @@ end
 ]]
 function hcMonitor(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
 
+    -- luup.log("hcMonitor lul_device:"..lul_device..", lul_variable:"..lul_variable..", lul_value_old:"..lul_value_old..", lul_value_new:"..lul_value_new.." at ".. os.date("%H:%M:%S"),25)
+
     -- We've changed a setpoint, sync the valves
     if(lul_variable == "CurrentSetpoint") then
         hcSetValveSetPoint(hcDeviceMap[lul_device],lul_value_new)
@@ -113,7 +111,6 @@ function hcMonitor(lul_device, lul_service, lul_variable, lul_value_old, lul_val
     -- As we're here anyway, let's check the boiler
     hcProcess(hcRelayId);
 
-    luup.log("DMHeating lul_device:"..lul_device..", lul_variable:"..lul_variable..", lul_value_old:"..lul_value_old..", lul_value_new:"..lul_value_new.." at ".. os.date("%H:%M:%S"),25)
 end
 
 --[[
@@ -122,15 +119,19 @@ end
 function hcSetValveSetPoint(valveIds,setPoint)
 
     for k,valveId in pairs(valveIds) do
-        -- luup.log("DMHeating hcSetValveSetPoint:"..valveId..", "..setPoint,25)
-        luup.variable_set(hcSetPointServiceId,"CurrentSetpoint",setPoint,valveId)
+        -- luup.log("hcSetValveSetPoint:"..valveId..", "..setPoint,25)
+
+        args = {}
+        args.NewCurrentSetpoint = setPoint
+        luup.call_action(hcSetPointServiceId,'SetCurrentSetpoint',args,valveId)
+
     end
 end
 
 --[[
     Statup routine
 ]]
-function hcSyncStatsAndValves( )
+function hcSyncStatsAndValves()
 
     -- Loop the map
     for statId,valveIds in pairs(hcDeviceMap) do
@@ -157,7 +158,9 @@ function hcTimer()
 
     hcProcess(hcRelayId);
 
-    luup.call_timer("hcTimer", 1, hcTimerDelay, "", "")
+    luup.call_timer("hcTimer", 1, hcTimerDelay, "", "data")
+
+    luup.log("hcTimer ran at ".. os.date("%H:%M:%S"),25)
 end
 
 function hcSetupEventListening()
@@ -176,7 +179,7 @@ end
     Startup function.
     Receives a map or sets the default
 ]]
-function hcStartup(lul_device, relayId)
+function hcStartup(lul_device, relayId, controllerId)
 
     luup.task("Running Lua Startup", 1, "HeatingCoordinator", -1)
 
@@ -187,6 +190,8 @@ function hcStartup(lul_device, relayId)
 
     -- This is the default Map of stat IDs to rad valves
     else
+        hcControllerId = lul_device
+
         -- Hallway
         hcDeviceMap[39]  = {46,42,44,48,50,52,54,56,60}
         -- Kitchen
@@ -214,12 +219,16 @@ function hcStartup(lul_device, relayId)
         hcRelayId = relayId
     end
 
+    if(controllerId ~= nil) then
+        hcControllerId = controllerId
+    end
+
     -- Listen to the stats
     hcSetupEventListening()
 
     -- Run the timer for the first time
     hcTimer()
 
-    luup.log("DMHeating hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
+    luup.log("hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
 
 end
