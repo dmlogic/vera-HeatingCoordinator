@@ -75,6 +75,7 @@ end
 function hcProcess(relayId)
 
     if(hcTooSoon(hcControllerId) == true) then
+        luup.log("hcProcess tooSoon",25)
         return 'tooSoon'
     end
 
@@ -85,6 +86,7 @@ function hcProcess(relayId)
 
         -- Yep, boiler on
         if(hcDeviceNeedsHeat(k)) then
+            luup.log("hcProcess stat ID "..k.." wants heat",25)
             hcSetRelay('HeatOn',relayId)
             return 'heatOn'
         end
@@ -105,6 +107,7 @@ function hcMonitor(lul_device, lul_service, lul_variable, lul_value_old, lul_val
 
     -- We've changed a setpoint, sync the valves
     if(lul_variable == "CurrentSetpoint") then
+        luup.log("Change in setpoint for device "..lul_device,25)
         hcSetValveSetPoint(hcDeviceMap[lul_device],lul_value_new)
     end
 
@@ -120,11 +123,11 @@ function hcSetValveSetPoint(valveIds,setPoint)
 
     for k,valveId in pairs(valveIds) do
         -- luup.log("hcSetValveSetPoint:"..valveId..", "..setPoint,25)
-
         args = {}
         args.NewCurrentSetpoint = setPoint
         luup.call_action(hcSetPointServiceId,'SetCurrentSetpoint',args,valveId)
 
+        -- http://YOUR_IP_ADDRESS:3480/data_request?id=action&DeviceNum=YOUR_DEVICE_NUM&serviceId=urn:upnp-org:serviceId:TemperatureSetpoint1_Heat&action=SetCurrentSetpoint&NewCurrentSetpoint=YOUR_VALUE
     end
 end
 
@@ -154,7 +157,7 @@ end
 ]]
 function hcTimer()
 
-    hcSyncStatsAndValves()
+    -- hcSyncStatsAndValves()
 
     hcProcess(hcRelayId);
 
@@ -193,25 +196,22 @@ function hcStartup(lul_device, relayId, controllerId)
         hcControllerId = lul_device
 
         -- Hallway
-        hcDeviceMap[39]  = {46,42,44,48,50,52,54,56,60}
+        -- hcDeviceMap[39]  = {46,42,44,48,50,52,54,56,60}
+        hcDeviceMap[39]  = {42,46,48}
         -- Kitchen
-        -- hcDeviceMap[x] = {y}
-        -- WC
-        -- hcDeviceMap[x] = {y}
-        -- Dining room
-        -- hcDeviceMap[x] = {y}
+        hcDeviceMap[78] = {44}
         -- Lounge
-        -- hcDeviceMap[x] = {y}
+        hcDeviceMap[76] = {50,52}
         -- Office
-        hcDeviceMap[65] = {62,58}
+        hcDeviceMap[65] = {62}
         -- Master bedroom
-        -- hcDeviceMap[x] = {y}
+        hcDeviceMap[70] = {56}
         -- Flo room
-        -- hcDeviceMap[x] = {y}
+        hcDeviceMap[68] = {60}
         -- Spare room
-        -- hcDeviceMap[x] = {58}
+        hcDeviceMap[74] = {58}
         -- Bathroom
-        -- hcDeviceMap[x] = {y}
+        hcDeviceMap[72] = {82}
     end
 
     -- Test relay or default
@@ -229,6 +229,6 @@ function hcStartup(lul_device, relayId, controllerId)
     -- Run the timer for the first time
     hcTimer()
 
-    luup.log("hcStartup started monitoring at ".. os.date("%H:%M:%S"),25)
+    luup.log("hcStartup started monitoring with device "..hcControllerId.." at ".. os.date("%H:%M:%S"),25)
 
 end
