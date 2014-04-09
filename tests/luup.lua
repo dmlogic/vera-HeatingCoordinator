@@ -11,7 +11,7 @@ end
 
 function luup.log(msg,lvl)
     if(lvl == nil) then value = "nil" end
-    print("LOG "..lvl..": "..msg)
+    -- print("LOG "..lvl..": "..msg)
 end
 
 function luup.variable_get(serviceId,varName,deviceId)

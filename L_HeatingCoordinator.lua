@@ -18,7 +18,11 @@ function hcDeviceNeedsHeat(deviceId)
         return false
     end
 
+    current = tonumber(current)
+    setPoint = tonumber(setPoint)
+
     if(current < setPoint) then
+        luup.log("hcProcess stat ID "..deviceId.." wants heat as "..current.." < "..setPoint,25)
         return true
     end
 
@@ -86,7 +90,6 @@ function hcProcess(relayId)
 
         -- Yep, boiler on
         if(hcDeviceNeedsHeat(k)) then
-            luup.log("hcProcess stat ID "..k.." wants heat",25)
             hcSetRelay('HeatOn',relayId)
             return 'heatOn'
         end
