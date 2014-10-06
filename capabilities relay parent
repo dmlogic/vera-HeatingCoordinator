@@ -1,0 +1,43 @@
+http://192.168.1.104:3480/data_request?id=invoke&DeviceNum=41
+
+
+urn:upnp-org:serviceId:TemperatureSensor1
+GetApplication
+SetApplication (NewApplication)
+GetCurrentTemperature
+GetName
+SetName (NewName)
+
+urn:micasaverde-com:serviceId:HVAC_OperatingState1
+
+urn:upnp-org:serviceId:HVAC_UserOperatingMode1
+SetModeTarget (NewModeTarget)
+SetEnergyModeTarget (NewModeTarget)
+GetModeTarget
+GetModeStatus
+GetName
+SetName (NewName)
+
+urn:upnp-org:serviceId:TemperatureSetpoint1_Heat
+GetApplication
+SetApplication (NewApplication)
+SetCurrentSetpoint (NewCurrentSetpoint)
+GetCurrentSetpoint
+GetSetpointAchieved
+GetName
+SetName (NewName)
+
+urn:upnp-org:serviceId:SwitchPower1
+SetTarget (newTargetValue)
+GetTarget
+GetStatus
+
+urn:micasaverde-com:serviceId:HaDevice1
+Reconfigure
+StressTest
+Remove
+Poll
+ToggleState
+SetPollFrequency (PollingEnabled,PollMinDelay)
+
+urn:micasaverde-com:serviceId:ZWaveDevice1
